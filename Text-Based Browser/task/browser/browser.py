@@ -1,47 +1,87 @@
+import os
+import sys
+import requests
 
-nytimes_com = '''
-This New Liquid Is Magnetic, and Mesmerizing
-
-Scientists have created “soft” magnets that can flow 
-and change shape, and that could be a boon to medicine 
-and robotics. (Source: New York Times)
-
-
-Most Wikipedia Profiles Are of Men. This Scientist Is Changing That.
-
-Jessica Wade has added nearly 700 Wikipedia biographies for
- important female and minority scientists in less than two 
- years.
-
-'''
-
-bloomberg_com = '''
-The Space Race: From Apollo 11 to Elon Musk
-
-It's 50 years since the world was gripped by historic images
- of Apollo 11, and Neil Armstrong -- the first man to walk 
- on the moon. It was the height of the Cold War, and the charts
- were filled with David Bowie's Space Oddity, and Creedence's 
- Bad Moon Rising. The world is a very different place than 
- it was 5 decades ago. But how has the space race changed since
- the summer of '69? (Source: Bloomberg)
+argv = 'python browser.py tb_tabs'
+storage_dir = 'tb_tabs'
+history = []
+url = ''
 
 
-Twitter CEO Jack Dorsey Gives Talk at Apple Headquarters
+class MyBrowser():
 
-Twitter and Square Chief Executive Officer Jack Dorsey 
- addressed Apple Inc. employees at the iPhone maker’s headquarters
- Tuesday, a signal of the strong ties between the Silicon Valley giants.
-'''
+    def check_cache_dir(self, storage_dir):
+        if not os.path.exists(storage_dir):
+            print("Can't find cache dir...")
+            os.mkdir(storage_dir)
+            print("Cache dir is created.")
 
-# write your code here
-blom = "bloomberg.com"
-nyt = "nytimes.com"
-while True:
-    adrr_input = input()
-    if adrr_input == nyt or adrr_input == blom:
-        if adrr_input == nyt:
-            print(nytimes_com)
+    def print_from_cache(self, file_path):
+        if os.path.isfile(file_path):
+            with open(file_path, "r") as file:
+                print(file.read())
         else:
-            print(bloomberg_com)
-    break
+            print("No path in cache!")
+
+    def check_url(self, addr):
+        if self.menu(addr):
+            return
+        if "." not in addr:
+            #  если адрес без точки, проверяем на наличие к кэше
+            file_path = f'{storage_dir}\\' + addr
+            #  если есть в кэше, выводим кэш
+            if os.path.isfile(file_path):
+                with open(file_path, "r") as file:
+                    print(file.read())
+                history.append(addr)
+#                print(f"History is: {', '.join(history)}")
+            else:
+                print("Wrong URL: error in address and there is no in cache!")
+                return False
+        else:
+            history.append(addr)
+#            print(f"History is: {history}")
+            return True
+
+    def history_print(self):
+        print(f"History is: {', '.join(history)}")
+
+    def menu(self, addr):
+        if addr == "exit":
+            sys.exit()
+            return True
+        elif addr == "back":
+            url = history.pop()
+            self.print_from_cache(history.pop())
+            return True
+        elif addr == "history":
+            self.history_print()
+            return True
+
+
+    def url_append(self, addr):
+        if "http" not in addr:
+            return "https://" + addr
+
+    def url_request(self, addr, short_addr):
+        try:
+            url_answer = requests.get(addr).text
+            short_addr = short_addr.split(".")[0]
+            with open(f"{storage_dir}\\{short_addr}", "w") as file:
+                file.write(url_answer)
+            return url_answer
+        except:
+            print("Page or file is unreachable!")
+            return
+
+
+browser = MyBrowser()
+
+while True:
+    browser.check_cache_dir(storage_dir)
+    url: str = input()
+#    print(browser.check_url(url))
+
+    if browser.check_url(url):
+        url_full = browser.url_append(url)
+        print(browser.url_request(url_full, url))
